@@ -1,0 +1,1 @@
+Blog criado no curso de Django com Python do instrutor Otávio Miranda
