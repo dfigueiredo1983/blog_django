@@ -73,54 +73,30 @@ class CreatedByListView(PostListView):
 
         return queryset
 
-    # def setup(self, *args, **kwargs):
-    #     print('Este é o método setup')
-    #     return super().setup(*args, **kwargs)
 
-    # def dispatch(self, *args, **kwargs):
-    #     print('Este é o método dispatch')
-    #     return super().dispatch(*args, **kwargs)
+class CategoryListView(PostListView):
 
-    # def get(self, *args, **kwargs):
-    #     print('Este é o método get')
-    #     return super().get(*args, **kwargs)
+    allow_empty = False
 
-    # def get_queryset(self, *args, **kwargs):
-    #     print('Este é o método get_queryset')
-    #     return super().get_queryset(*args, **kwargs)
+    def get_queryset(self) -> QuerySet[Any]:
+        queryset = super().get_queryset()
+        queryset = queryset.filter(category__slug=self.kwargs.get('slug'))
+        return queryset
 
-    # def get_context_data(self, *args, **kwargs):
-    #     print('Este é o método get_context_data')
-    #     return super().get_context_data(*args, **kwargs)
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        # print('Imprimindo o self: ', self)
+        # print('Imprimindo o self: ', dir(self))
+        # print('Imprimindo o self: ', self.__dict__)
 
+        page_title = f'{self.object_list[0].category.name} '  # type: ignore
+        '- Categoria - '
 
-def created_by(request, author_pk):
-    user = User.objects.filter(pk=author_pk).first()
-
-    if user is None:
-        raise Http404()
-
-    posts = Post.objects.get_published().filter(  # type: ignore
-        created_by__pk=author_pk)
-
-    paginator = Paginator(posts, PER_PAGE)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
-
-    user_full_name = user.username
-    if (user.first_name):
-        user_full_name = f'{user.first_name} {user.last_name}'
-
-    page_title = 'Posts de ' + user_full_name + ' - '
-
-    return render(
-        request,
-        'blog/pages/index.html',
-        {
-            'page_obj': page_obj,
+        context.update({
             'page_title': page_title,
-        }
-    )
+        })
+
+        return context
 
 
 def category(request, slug):
