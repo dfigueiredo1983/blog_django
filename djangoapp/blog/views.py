@@ -1,11 +1,11 @@
 from typing import Any
 from django.core.paginator import Paginator
 from django.db.models.query import QuerySet
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from blog.models import Post, Page
 from django.db.models import Q
 from django.contrib.auth.models import User
-from django.http import Http404
+from django.http import Http404, HttpRequest, HttpResponse
 
 from django.views.generic import ListView
 
@@ -13,17 +13,10 @@ PER_PAGE = 9
 
 
 class PostListView(ListView):
-    model = Post
     template_name = 'blog/pages/index.html'
     context_object_name = 'posts'
-    ordering = '-pk',
     paginate_by = PER_PAGE
     queryset = Post.objects.get_published()  # type: ignore
-
-    # def get_queryset(self) -> QuerySet[Any]:
-    #     queryset = super().get_queryset()
-    #     queryset = queryset.filter(is_published=True)
-    #     return queryset
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
@@ -33,36 +26,72 @@ class PostListView(ListView):
         return context
 
 
-# def index(request):
-#     # Function Base Views -> São funções
-#     # Recebe uma request e devolve um response
-#     # Não tem necessidade de lógica adicional, menos complexidade, mais simples
+class CreatedByListView(PostListView):
 
-#     # Class Base Views -> São classes (POO)
-#     # Pode usar herança para especializar
-#     # Quando necessita de mais complexidade ou manipulação de dados
-#     # Muita repetição de código
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        # Criando um dicionário vazio para o contexto
+        self._temp_context: dict[str, Any] = {}
 
-#     # Obter dados do model
-#     # Esses dados são uma lista de objetos
-#     # Paginação
-#     # Renderizando um template
-#     # Manipulando contextos
+    def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        author_pk = self.kwargs.get('author_pk')
+        user = User.objects.filter(pk=author_pk).first()
 
-#     posts = Post.objects.get_published()  # type: ignore
+        if user is None:
+            raise Http404()
+            # return redirect('blog:index')
 
-#     paginator = Paginator(posts, PER_PAGE)
-#     page_number = request.GET.get("page")
-#     page_obj = paginator.get_page(page_number)
+        self._temp_context.update({
+            'author_pk': author_pk,
+            'user': user,
+        })
 
-#     return render(
-#         request,
-#         'blog/pages/index.html',
-#         {
-#             'page_obj': page_obj,
-#             'page_title': 'Home - ',
-#         }
-#     )
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        user = self._temp_context['user']
+
+        user_full_name = user.username
+        if user.first_name:
+            user_full_name = f'{user.first_name} {user.last_name}'
+
+        page_title = 'Posts de ' + user_full_name + ' - '
+
+        context.update({
+            'page_title': page_title,
+        })
+
+        return context
+
+    def get_queryset(self) -> QuerySet[Any]:
+        queryset = super().get_queryset()
+        # author_pk = self._temp_context['author_pk']
+        author_pk = self._temp_context['user'].pk
+        queryset = queryset.filter(created_by__pk=author_pk)
+
+        return queryset
+
+    # def setup(self, *args, **kwargs):
+    #     print('Este é o método setup')
+    #     return super().setup(*args, **kwargs)
+
+    # def dispatch(self, *args, **kwargs):
+    #     print('Este é o método dispatch')
+    #     return super().dispatch(*args, **kwargs)
+
+    # def get(self, *args, **kwargs):
+    #     print('Este é o método get')
+    #     return super().get(*args, **kwargs)
+
+    # def get_queryset(self, *args, **kwargs):
+    #     print('Este é o método get_queryset')
+    #     return super().get_queryset(*args, **kwargs)
+
+    # def get_context_data(self, *args, **kwargs):
+    #     print('Este é o método get_context_data')
+    #     return super().get_context_data(*args, **kwargs)
 
 
 def created_by(request, author_pk):
