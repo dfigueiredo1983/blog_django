@@ -99,19 +99,40 @@ class CategoryListView(PostListView):
         return context
 
 
-def category(request, slug):
+class TagListView(PostListView):
+
+    allow_empty = False
+
+    def get_queryset(self) -> QuerySet[Any]:
+        queryset = super()\
+            .get_queryset()\
+            .filter(tags__slug=self.kwargs.get('slug'))
+
+        return queryset
+
+    def get_context_data(self, **kwargs) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        page_title = (
+            f'{self.object_list[0].tags.first().name}'  # type: ignore
+            ' - Tag - '
+        )
+        context.update({
+            'page_title': page_title,
+        })
+        return context
+
+
+def tag(request, slug):
     posts = Post.objects.get_published().filter(  # type: ignore
-        category__slug=slug)
+        tags__slug=slug)
 
     paginator = Paginator(posts, PER_PAGE)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
-
     if len(page_obj) == 0:
         raise Http404()
 
-    page_title = f'{page_obj[0].category.name} - Categoria - '
-
+    page_title = f'{page_obj[0].tags.first().name} - Tag - '
     return render(
         request,
         'blog/pages/index.html',
@@ -133,7 +154,6 @@ def page(request, slug):
         raise Http404()
 
     page_title = f'{page_obj.title} - Page - '
-
     return render(
         request,
         'blog/pages/page.html',
@@ -146,12 +166,10 @@ def page(request, slug):
 
 def post(request, slug):
     post_obj = Post.objects.get_published().filter(slug=slug).first()  # type: ignore
-
     if post_obj is None:
         raise Http404()
 
     page_title = f'{post_obj.title} - Post - '
-
     return render(
         request,
         'blog/pages/post.html',
@@ -162,32 +180,8 @@ def post(request, slug):
     )
 
 
-def tag(request, slug):
-    posts = Post.objects.get_published().filter(  # type: ignore
-        tags__slug=slug)
-
-    paginator = Paginator(posts, PER_PAGE)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
-
-    if len(page_obj) == 0:
-        raise Http404()
-
-    page_title = f'{page_obj[0].tags.first().name} - Tag - '
-
-    return render(
-        request,
-        'blog/pages/index.html',
-        {
-            'page_obj': page_obj,
-            'page_title': page_title,
-        }
-    )
-
-
 def search(request):
     search_value = request.GET.get('search', '').strip()
-
     posts = (Post
              .objects
              .get_published()  # type: ignore
@@ -200,9 +194,7 @@ def search(request):
                  Q(content__icontains=search_value)
              )[:PER_PAGE]
              )
-
     page_title = f'{search_value[:30]} - Search - '
-
     return render(
         request,
         'blog/pages/index.html',
