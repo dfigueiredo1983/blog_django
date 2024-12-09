@@ -1,0 +1,11 @@
+Executar o docker removendo containers
+docker-compose up --build --remove-orphans --renew-anon-volumes --force-recreate
+
+Executar a imagem docker no modo iterativo executando o bash do linux
+docker run -it blog_django-djangoapp /bin/sh
+
+Executar o docker-compose removendo containers e imagens atuais e executando um script
+docker-compose up --rm --build script.sh
+
+Executar o docker-compose no modo iterativo no container djangoapp executando o shell do Django
+docker-compose run --rm djangoapp python manage.py shell

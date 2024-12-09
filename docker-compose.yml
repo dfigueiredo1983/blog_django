@@ -1,7 +1,8 @@
 services:
   djangoapp:
     container_name: djangoapp
-    user: "${UID}:${GID}"
+    # user: "${UID}:${GID}"
+    # # user: "1000:1000"
     build:
       context: .
     ports:
