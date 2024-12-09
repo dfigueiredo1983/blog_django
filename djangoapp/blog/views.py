@@ -180,6 +180,39 @@ def post(request, slug):
     )
 
 
+class SearchListView(PostListView):
+    def __init__(self, **kwargs: Any) -> None:
+        self._search_value = ''
+        super().__init__(**kwargs)
+
+    def setup(self, request: HttpRequest, *args: Any, **kwargs: Any) -> None:
+        self._search_value = request.GET.get('search', '').strip()
+        return super().setup(request, *args, **kwargs)
+
+    def get_queryset(self) -> QuerySet[Any]:
+        search_value = self._search_value
+        return super().get_queryset().filter(
+            Q(title__icontains=search_value) |
+            Q(excerpt__icontains=search_value) |
+            Q(content__icontains=search_value)
+        )[:PER_PAGE]
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        page_title = f'{self._search_value[:30]} - Search - '
+        context.update({
+            'search_value': self._search_value,
+            'page_title': page_title,
+        })
+        return context
+
+    def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        if self._search_value == '':
+            return redirect('blog:index')
+
+        return super().get(request, *args, **kwargs)
+
+
 def search(request):
     search_value = request.GET.get('search', '').strip()
     posts = (Post
