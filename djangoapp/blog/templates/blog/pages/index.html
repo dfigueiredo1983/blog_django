@@ -5,10 +5,12 @@
     <div class="section-content-wide">
       <div class="section-gap">
 
-        {% if page_obj %}
+        {% if posts %}
+        {% comment %} {% if page_obj %} {% endcomment %}
           <div class="card-grid">
             {% comment %} {% for i in ""|ljust:"9" %} {% endcomment %}
-            {% for post in page_obj %}
+            {% for post in posts %}
+            {% comment %} {% for post in page_obj %} {% endcomment %}
               {% include 'blog/partials/_post-card.html' with i=forloop.counter0 %}
             {% endfor %}
           </div>
