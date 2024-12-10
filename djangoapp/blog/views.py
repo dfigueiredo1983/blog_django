@@ -27,7 +27,6 @@ class PostListView(ListView):
 
 
 class CreatedByListView(PostListView):
-
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         # Criando um dicionário vazio para o contexto
@@ -75,7 +74,6 @@ class CreatedByListView(PostListView):
 
 
 class CategoryListView(PostListView):
-
     allow_empty = False
 
     def get_queryset(self) -> QuerySet[Any]:
@@ -179,22 +177,6 @@ class PostDetailView(DetailView):
 
     def get_queryset(self) -> QuerySet[Any]:
         return super().get_queryset().filter(is_published=True)
-
-
-def post(request, slug):
-    post_obj = Post.objects.get_published().filter(slug=slug).first()  # type: ignore
-    if post_obj is None:
-        raise Http404()
-
-    page_title = f'{post_obj.title} - Post - '
-    return render(
-        request,
-        'blog/pages/post.html',
-        {
-            'post': post_obj,
-            'page_title': page_title,
-        }
-    )
 
 
 class SearchListView(PostListView):
